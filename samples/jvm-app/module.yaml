@@ -1,0 +1,17 @@
+description: "Sample JVM app: reads/creates an image, converts to gray, blurs, detects edges, writes PNGs."
+
+product: jvm/app
+
+dependencies:
+  - //modules/opencv
+  # Runtime-only native binary for this machine. Swap for another opencvkt-natives-* module/artifact, or drop it and
+  # point -Dopencvkt.library.path=<dir> at a libopencvkt downloaded from the GitHub release.
+  - //natives/jvm-linux-x64:
+      scope: runtime-only
+
+settings:
+  kotlin:
+    version: 2.4.21
+  jvm:
+    release: 17
+    mainClass: com.jamshedalamqaderi.kmp.opencvkt.samples.MainKt

@@ -1,0 +1,33 @@
+description: "Image file reading and writing (opencv_imgcodecs)."
+
+product:
+  type: kmp/lib
+  platforms:
+    - jvm
+    - android
+    - iosArm64
+    - iosSimulatorArm64
+    - iosX64
+    - macosArm64
+    - linuxX64
+    - linuxArm64
+    - mingwX64
+    - androidNativeArm64
+    - androidNativeArm32
+    - androidNativeX64
+    - androidNativeX86
+
+aliases:
+  - jvmAndAndroid: [jvm, android]
+
+apply:
+  - //templates/opencv-lib.module-template.yaml
+  - //templates/publish.module-template.yaml
+
+dependencies:
+  - //modules/core: exported
+  - //modules/imgproc: exported
+
+settings:
+  publishing:
+    artifactId: opencvkt-imgcodecs

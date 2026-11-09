@@ -1,0 +1,30 @@
+# Maven Central publication settings shared by every published module (modules/* and natives/*).
+
+settings:
+  # Maven Central (Central Portal) publication: `./kotlin publish mavenCentral`
+  # Credentials come from env vars (see .github/workflows/publish.yaml):
+  #   KOTLIN_TOOLCHAIN_MAVEN_CENTRAL_USERNAME / KOTLIN_TOOLCHAIN_MAVEN_CENTRAL_PASSWORD  (Central Portal user token)
+  #   KOTLIN_TOOLCHAIN_SIGNING_KEY / KOTLIN_TOOLCHAIN_SIGNING_KEY_PASSPHRASE             (ASCII-armored PGP key)
+  publishing:
+    enabled: true
+    group: com.jamshedalamqaderi.kmp.opencvkt
+    # Overwritten from the git tag by the publish workflow (scripts/set-version.sh).
+    version: 0.1.0-SNAPSHOT
+    publishSources: true
+    signArtifacts: true
+    mavenCentral:
+      enabled: true
+      publishingMode: manual
+    pom:
+      url: https://github.com/JamshedAlamQaderi/opencv-kt
+      licenses:
+        - name: The Apache License, Version 2.0
+          url: https://www.apache.org/licenses/LICENSE-2.0.txt
+      developers:
+        - id: JamshedAlamQaderi
+          name: Jamshed Alam Qaderi
+          url: https://github.com/JamshedAlamQaderi
+      scm:
+        url: https://github.com/JamshedAlamQaderi/opencv-kt
+        connection: scm:git:git://github.com/JamshedAlamQaderi/opencv-kt.git
+        developerConnection: scm:git:ssh://git@github.com/JamshedAlamQaderi/opencv-kt.git

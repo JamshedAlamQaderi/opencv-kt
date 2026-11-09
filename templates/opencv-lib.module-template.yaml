@@ -1,0 +1,29 @@
+# Shared Kotlin configuration for every opencv-kt library module (modules/*). Publishing lives in
+# publish.module-template.yaml (also used by natives/*).
+#
+# Templates cannot contain `product:` or `aliases:`, so each module declares those itself.
+# Library modules (modules/*) use the platform list from modules/core/module.yaml and
+#   aliases: [ jvmAndAndroid: [jvm, android] ]   # JVM desktop + Android share the JNI bridge
+
+settings:
+  kotlin:
+    version: 2.4.21
+    explicitApi: strict
+    freeCompilerArgs: [ -Xexpect-actual-classes ]
+    optIns: [ com.jamshedalamqaderi.kmp.opencvkt.core.InternalOpenCvApi ]
+  jvm:
+    release: 17
+    test:
+      # Lets `./kotlin test -p jvm` load the locally built JNI library (scripts/build-native.sh) without a
+      # natives artifact on the test classpath. Resolved against the module directory (the test working dir).
+      systemProperties:
+        opencvkt.library.path: ../../native/prebuilt/jni
+  android:
+    minSdk: 24
+    compileSdk: 37
+
+settings@native:
+  kotlin:
+    optIns:
+      - com.jamshedalamqaderi.kmp.opencvkt.core.InternalOpenCvApi
+      - kotlinx.cinterop.ExperimentalForeignApi

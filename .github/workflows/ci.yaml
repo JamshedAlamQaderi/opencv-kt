@@ -1,0 +1,53 @@
+name: CI
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test-linux:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: true
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Cache Kotlin Toolchain / Kotlin Native
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cache/JetBrains/Kotlin
+            ~/.konan
+          key: kotlin-${{ runner.os }}-${{ hashFiles('kotlin', 'templates/*.yaml') }}
+
+      - name: Cache native build (keyed on OpenCV commit + shim sources)
+        id: natives
+        uses: actions/cache@v4
+        with:
+          path: native/prebuilt
+          key: natives-linuxX64-${{ hashFiles('.git/modules/opencv/HEAD', 'native/**', 'modules/*/native/**', 'modules/*/include/**', 'scripts/build-native.sh') }}
+
+      - name: Install ninja
+        run: sudo apt-get update && sudo apt-get install -y ninja-build
+
+      - name: Build libopencvkt (linuxX64)
+        if: steps.natives.outputs.cache-hit != 'true'
+        run: |
+          scripts/prime-konan.sh linux_x64
+          scripts/build-native.sh linuxX64
+
+      - name: Test (JVM + linuxX64)
+        run: |
+          scripts/generate-cinterop-defs.sh
+          scripts/stage-natives.sh
+          ./kotlin test -p jvm -p linuxX64

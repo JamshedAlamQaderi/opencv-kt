@@ -1,0 +1,108 @@
+name: Publish to Maven Central
+
+# Same tag scheme as KTransport: v1.2.3 or v1.2.3-dev-4
+on:
+  push:
+    tags:
+      - 'v[0-9]+.[0-9]+.[0-9]+-dev-[0-9]+'
+      - 'v[0-9]+.[0-9]+.[0-9]+'
+  workflow_dispatch:
+
+concurrency:
+  group: opencvkt-publish
+  cancel-in-progress: false
+
+jobs:
+  # ---------------------------------------------------------------- 1. native binaries for every target
+  natives:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { target: linuxX64,           os: ubuntu-latest, konan: linux_x64 }
+          - { target: linuxArm64,         os: ubuntu-latest, konan: linux_arm64 }
+          - { target: mingwX64,           os: ubuntu-latest, konan: mingw_x64 }
+          - { target: androidNativeArm64, os: ubuntu-latest, konan: android_arm64 }
+          - { target: androidNativeArm32, os: ubuntu-latest, konan: android_arm32 }
+          - { target: androidNativeX64,   os: ubuntu-latest }
+          - { target: androidNativeX86,   os: ubuntu-latest }
+          - { target: macosArm64,         os: macos-latest }
+          - { target: iosArm64,           os: macos-latest }
+          - { target: iosSimulatorArm64,  os: macos-latest }
+          - { target: iosX64,             os: macos-latest }
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: true
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - name: Install ninja
+        run: |
+          if [ "$RUNNER_OS" = "macOS" ]; then brew install ninja; else sudo apt-get update && sudo apt-get install -y ninja-build zip; fi
+      - name: Prime Kotlin/Native toolchain
+        if: matrix.konan != ''
+        run: scripts/prime-konan.sh ${{ matrix.konan }}
+      - name: Build
+        run: scripts/build-native.sh ${{ matrix.target }}
+      - uses: actions/upload-artifact@v4
+        with:
+          name: natives-${{ matrix.target }}
+          path: native/prebuilt
+          if-no-files-found: error
+
+  # ---------------------------------------------------------------- 2. publish klibs/jars/aars + GitHub release
+  publish:
+    needs: natives
+    # Apple klibs can only be compiled on macOS; Linux/MinGW/Android klibs cross-compile fine from there too.
+    runs-on: macos-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: true
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: natives-*
+          path: native/prebuilt
+          merge-multiple: true
+
+      - name: Generate cinterop .def files and stage JNI libraries into natives/* modules
+        run: |
+          scripts/generate-cinterop-defs.sh
+          scripts/stage-natives.sh
+
+      - name: Set version from tag
+        if: startsWith(github.ref, 'refs/tags/')
+        run: scripts/set-version.sh "${{ github.ref_name }}"
+
+      - name: Test (JVM)
+        run: ./kotlin test -p jvm
+
+      - name: Publish to Maven Central
+        run: ./kotlin publish mavenCentral
+        env:
+          KOTLIN_TOOLCHAIN_MAVEN_CENTRAL_USERNAME: ${{ secrets.SONATYPE_USERNAME }}
+          KOTLIN_TOOLCHAIN_MAVEN_CENTRAL_PASSWORD: ${{ secrets.SONATYPE_PASSWORD }}
+          KOTLIN_TOOLCHAIN_SIGNING_KEY: ${{ secrets.GPG_PRIVATE_KEY }}
+          KOTLIN_TOOLCHAIN_SIGNING_KEY_PASSPHRASE: ${{ secrets.GPG_PASSWORD }}
+
+      - name: Package natives for the GitHub release
+        if: startsWith(github.ref, 'refs/tags/')
+        run: scripts/package-natives.sh "${GITHUB_REF_NAME#v}"
+
+      - name: GitHub release with native binaries
+        if: startsWith(github.ref, 'refs/tags/')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: dist/*
+          prerelease: ${{ contains(github.ref_name, '-dev-') }}
+          generate_release_notes: true

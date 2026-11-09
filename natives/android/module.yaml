@@ -1,0 +1,25 @@
+description: "Prebuilt opencv-kt JNI library (libopencvkt.so) for Android, all ABIs. Runtime-only."
+
+# Ships resources/opencvkt/natives/android-<abi>/libopencvkt.so as classpath resources; core's Android loader
+# extracts the one matching Build.SUPPORTED_ABIS. (Kotlin Toolchain 0.13 library AARs only contain classes.jar,
+# the manifest and assets, so a jni/ folder can't be published.) Apps can instead put libopencvkt.so from the
+# GitHub release into their own jniLibs/<abi>/ - System.loadLibrary is tried first.
+# The binaries are NOT committed: `scripts/stage-natives.sh` copies them from native/prebuilt/jni/android/<abi>/.
+product:
+  type: kmp/lib
+  platforms: [ android ]
+
+apply:
+  - //templates/publish.module-template.yaml
+
+settings:
+  kotlin:
+    version: 2.4.21
+  jvm:
+    release: 17
+  android:
+    minSdk: 24
+    compileSdk: 37
+    namespace: com.jamshedalamqaderi.kmp.opencvkt.natives
+  publishing:
+    artifactId: opencvkt-natives-android

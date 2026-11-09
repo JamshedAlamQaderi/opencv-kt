@@ -1,0 +1,11 @@
+# opencv-kt — Kotlin Multiplatform bindings for OpenCV, built from the `opencv/` git submodule.
+#
+# Layout:
+#   modules/<name>          one Kotlin library per OpenCV module (Kotlin API + JNI glue + C shim + C header)
+#   modules/opencv          umbrella library depending on every module (single dependency for consumers)
+#   natives/<platform>      runtime-only artifacts that carry the prebuilt JNI shared library (JVM / Android)
+#   samples/*               runnable examples (not published)
+modules:
+  - modules/*
+  - natives/*
+  - samples/*

@@ -1,0 +1,17 @@
+description: "Prebuilt opencv-kt JNI library (libopencvkt) for JVM on Linux aarch64. Runtime-only."
+
+# Carries resources/opencvkt/natives/linux-arm64/<libopencvkt> which the core module's JvmNativeLoader extracts
+# and loads. The binary is NOT committed: `scripts/stage-natives.sh` copies it from native/prebuilt/jni/linux-arm64/
+# (produced by scripts/build-native.sh, or downloaded with scripts/fetch-natives.sh).
+product: jvm/lib
+
+apply:
+  - //templates/publish.module-template.yaml
+
+settings:
+  kotlin:
+    version: 2.4.21
+  jvm:
+    release: 17
+  publishing:
+    artifactId: opencvkt-natives-linux-arm64
